@@ -28,8 +28,7 @@ SCREENS = [
 
 
 def _activate(label: str) -> bool:
-    return st.sidebar.radio("Screen", [s[1] for s in SCREENS], index=0, key="scr",
-                            format_func=lambda x: x) == label
+    return st.session_state.get("scr") == label
 
 
 def main() -> None:
@@ -40,12 +39,16 @@ def main() -> None:
 
     st.title("📁 file-manager")
 
-    active_shown = SCREENS[0][1]
-    screen_name, icon = SCREENS[0]
-    for module_name, shown in SCREENS:
-        if _activate(shown):
-            screen_name, icon = module_name, shown
-            break
+    # Sidebar screen selector. Created exactly once (not once per screen).
+    active = st.sidebar.radio(
+        "Screen",
+        [label for _, label in SCREENS],
+        index=0,
+        key="scr",
+        format_func=lambda x: x,
+    )
+
+    screen_name = next(name for name, shown in SCREENS if shown == active)
 
     # Sidebar file uploader persists files across every screen.
     uploaded = st.sidebar.file_uploader(
