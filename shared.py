@@ -29,11 +29,8 @@ def ensure_dir(path: str) -> str:
 
 def safe_name(name: str) -> str:
     """Return a filesystem-safe basename for a filename."""
-    base = os.path.basename(name or "") or "unnamed"
-    base = os.path.normpath(base)
-    if os.sep in base or os.altsep in base:
-        base = base.split(os.sep)[-1]
-    return base or "unnamed"
+    base = os.path.basename(os.path.join("x", name or "unnamed"))
+    return base if base.strip() else "unnamed"
 
 
 def unique_name(name: str) -> str:

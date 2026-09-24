@@ -85,21 +85,22 @@ def _pdf_list_ui(order: list[str]) -> list[str]:
         with cols[0]:
             st.markdown(f"**{i + 1}.** {fn}")
         with cols[1]:
-            if st.button("▲", key=f"up_{i}", help="Move up"):
-                if i > 0:
-                    ordered[i], ordered[i - 1] = ordered[i - 1], ordered[i]
-                    st.session_state["pdf_merge_order"] = ordered
-                    st.rerun()
+            move_up = st.button("▲", key=f"up_{i}", disabled=i == 0)
         with cols[2]:
-            if st.button("▼", key=f"dn_{i}", help="Move down"):
-                if i < n - 1:
-                    ordered[i], ordered[i + 1] = ordered[i + 1], ordered[i]
-                    st.session_state["pdf_merge_order"] = ordered
-                    st.rerun()
+            move_down = st.button("▼", key=f"dn_{i}", disabled=i == n - 1)
         with cols[3]:
-            if st.button("✕", key=f"rm_{i}", help="Remove from merge"):
-                st.session_state["pdf_merge_order"] = [x for x in ordered if x != fn]
-                st.rerun()
+            from_merge = st.button("✕", key=f"rm_{i}")
+        if move_up and i < n - 1:
+            ordered[i], ordered[i - 1] = ordered[i - 1], ordered[i]
+            st.session_state["pdf_merge_order"] = ordered
+            st.rerun()
+        if move_down and i > 0:
+            ordered[i], ordered[i + 1] = ordered[i + 1], ordered[i]
+            st.session_state["pdf_merge_order"] = ordered
+            st.rerun()
+        if from_merge:
+            st.session_state["pdf_merge_order"] = [x for x in ordered if x != fn]
+            st.rerun()
     return ordered
 
 

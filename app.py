@@ -50,18 +50,30 @@ def main() -> None:
 
     screen_name = next(name for name, shown in SCREENS if shown == active)
 
-    # Sidebar file uploader persists files across every screen.
+    # Sidebar file uploader persists files across every screen. Streamlit holds
+    # the last selection and re-fires this block on the rerun that a
+    # delete-triggered st.rerun() causes, which would otherwise re-write the
+    # same files onto a freshly-wiped directory. We only write on a genuine
+    # change to the selection, so a re-sent identical upload is ignored.
+    last_selected = st.session_state.setdefault("last_upload", ())
     uploaded = st.sidebar.file_uploader(
-        "Upload files", accept_multiple_files=True
+        "Upload files", accept_multiple_files=True, key="uploader"
     )
     if uploaded:
-        saved = []
-        for up in uploaded:
-            target = unique_name(up.name)
-            with open(os.path.join(UPLOAD_DIR, target), "wb") as f:
-                f.write(up.getbuffer())
-            saved.append(target)
-        st.success(f"{len(saved)} file(s) saved: {', '.join(saved)}")
+        names = tuple(up.name for up in uploaded)
+        if names != last_selected:
+            to_save = []
+            for up in uploaded:
+                target = unique_name(up.name)
+                to_save.append((up, target))
+            for up, target in to_save:
+                with open(os.path.join(UPLOAD_DIR, target), "wb") as f:
+                    f.write(up.getbuffer())
+            st.session_state["last_upload"] = names
+            st.success(
+                f"{len(to_save)} file(s) saved: "
+                f"{', '.join(t for _, t in to_save)}"
+            )
 
     import importlib
 

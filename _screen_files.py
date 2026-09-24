@@ -31,6 +31,10 @@ def render() -> None:
     if st.button("🗑️ Delete all files"):
         for fn in _delete_all():
             st.warning(f"Deleted {fn}")
+        # Re-render so the Files list clears to reflect the deletions.
+        # We do NOT write to the "uploader" key in session_state: it is the
+        # key of the sidebar file_uploader widget, and Streamlit forbids
+        # mutating a widget's state after that widget has been instantiated.
         st.rerun()
 
 

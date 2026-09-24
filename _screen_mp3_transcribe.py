@@ -237,8 +237,12 @@ def render() -> None:
     sh.ensure_dir(sh.WORK_DIR)
     st.subheader("🎙️ MP3 Transcribe")
 
-    files = [f for f in sh.list_upload_files()
-             if f.lower().endswith((".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg"))]
+    files = [
+        row["name"] for row in sh.list_upload_files()
+        if row["name"].lower().endswith(
+            (".mp3", ".wav", ".m4a", ".flac", ".aac", ".ogg")
+        )
+    ]
     if not files:
         st.info(
             "No audio files in uploads yet. Use the sidebar uploader, then this "
