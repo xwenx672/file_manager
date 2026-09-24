@@ -22,13 +22,19 @@ from PyPDF2 import PdfReader, PdfWriter
 
 
 def _sorted_pdf_names() -> list[str]:
-    """PDF files in uploads, excluding hidden/temp files."""
+    """PDF file names in uploads, sorted, excluding hidden/temp files.
+
+    ``sh.list_upload_files()`` returns a list of ``{name, size, modified}``
+    dicts, not filenames, so destructure each row to its ``name`` before the
+    ``.lower()`` filter. Applying ``.lower()`` directly to a dict raised
+    ``AttributeError`` (see https://github.com/xwenx672/file_manager/issues/5).
+    """
     if not os.path.isdir(sh.UPLOAD_DIR):
         return []
     return sorted(
-        fn
-        for fn in sh.list_upload_files()
-        if fn.lower().endswith(".pdf") and not fn.startswith(".")
+        row["name"]
+        for row in sh.list_upload_files()
+        if row["name"].lower().endswith(".pdf") and not row["name"].startswith(".")
     )
 
 
