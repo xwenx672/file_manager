@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import time
+from typing import Optional
 
 import streamlit as st
 
@@ -47,7 +48,14 @@ def _ensure_order() -> list[str]:
     return st.session_state[key]
 
 
-def _merge_pdfs(order: list[str], out_path: str) -> None:
+def _merge_pdfs(order: list[str], out_path: str) -> Optional[str]:
+    """Merge each file's pages into ``out_path``.
+
+    Returns the path that was written, or ``None`` if nothing could be added
+    (every file was unreadable or empty). Callers writing to the output file
+    must check for ``None`` first — the writer only outputs an on-disk file
+    when a merge actually happens; otherwise ``out_path`` does not exist.
+    """
     writer: "PdfWriter" = PdfWriter()
     added = 0
     for fn in order:
@@ -63,11 +71,12 @@ def _merge_pdfs(order: list[str], out_path: str) -> None:
         for page in reader.pages:
             writer.add_page(page)
     if added == 0:
-        st.warning("Nothing to merge — every file was empty.")
-        return
+        st.warning("Nothing to merge — every file was empty or unreadable.")
+        return None
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "wb") as f:
         writer.write(f)
+    return out_path
 
 
 def _pdf_list_ui(order: list[str]) -> list[str]:
@@ -112,15 +121,25 @@ def _merge_button(order: list[str]) -> list[str]:
         out_path = os.path.join(sh.WORK_DIR, f"merged-{ts}.pdf")
         with st.spinner("Merging PDFs…"):
             try:
-                _merge_pdfs(order, out_path)
+                result = _merge_pdfs(order, out_path)
             except Exception as exc:
                 st.error(f"Merge failed: {exc}")
                 return order
-        size = os.path.getsize(out_path)
-        st.success(f"Merged {len(order)} PDF into one file.")
+
+        if not result:
+            # Nothing was written — every file was unreadable or empty.
+            # Returning early avoids os.path.getsize() on a file that does
+            # not exist (FileNotFoundError) and stops the UI claiming a
+            # success the download button can never deliver.
+            return order
+
+        size = os.path.getsize(result)
+        st.success(
+            f"Merged {len(order)} PDF in one file. (|{size}B|)"
+        )
         st.download_button(
             "⬇️ Download merged.pdf",
-            data=open(out_path, "rb"),
+            data=result,
             file_name="merged.pdf",
             mime="application/pdf",
         )
