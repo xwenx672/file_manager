@@ -85,6 +85,30 @@ def _merge_pdfs(order: list[str], out_path: str) -> Optional[str]:
     return out_path
 
 
+def _delete_pdf(name: str) -> bool:
+    """Delete a named PDF from uploads/. Returns True when the file was removed.
+
+    This is the actual deletion that the "Remove" (✕) control on the PDF merge
+    screen must trigger. The previous behaviour only dropped the name from the
+    in-memory ``pdf_merge_order`` list, leaving the underlying file on disk
+    (https://github.com/xwenx672/file_manager/issues/6).
+    """
+    if name not in _sorted_pdf_names():
+        return False
+    if not sh.delete_file(name):
+        # Missing on disk — keep the in-memory list in sync so a stale entry
+        # does not linger.
+        key = "pdf_merge_order"
+        if isinstance(st.session_state.get(key), list) and name in st.session_state[key]:
+            st.session_state[key] = [x for x in st.session_state[key] if x != name]
+        return False
+    # Drop from the in-memory order so the removed PDF is gone everywhere.
+    key = "pdf_merge_order"
+    if isinstance(st.session_state.get(key), list) and name in st.session_state[key]:
+        st.session_state[key] = [x for x in st.session_state[key] if x != name]
+    return True
+
+
 def _pdf_list_ui(order: list[str]) -> list[str]:
     ordered = order[:]
     n = len(ordered)
@@ -114,8 +138,9 @@ def _pdf_list_ui(order: list[str]) -> list[str]:
             st.session_state["pdf_merge_order"] = ordered
             st.rerun()
         if from_merge:
-            st.session_state["pdf_merge_order"] = [x for x in ordered if x != fn]
-            st.rerun()
+            # Actually delete the PDF (from disk and the in-memory order).
+            if _delete_pdf(fn):
+                st.rerun()
     return ordered
 
 
