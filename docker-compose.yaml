@@ -1,0 +1,11 @@
+services:
+  file-manager:
+    build: .
+    container_name: file-manager
+    # Comes back on boot / daemon restart.
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    # Uploaded files persist on the host here (created on first upload).
+    volumes:
+      - ./uploads:/uploads
