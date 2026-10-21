@@ -31,6 +31,22 @@ def _activate(label: str) -> bool:
     return st.session_state.get("scr") == label
 
 
+def _apply_pending_clear() -> bool:
+    """Consume the ``clear_uploader`` flag left behind by the Files screen.
+
+    Called *before* the sidebar ``file_uploader`` widget is instantiated,
+    because Streamlit forbids mutating a widget's state after the widget has
+    been created in the current run. When the flag is present it drops the
+    uploader's selection and resets the dedupe tracker so a re-upload of the
+    same names is accepted again. Returns True when a clear was applied.
+    """
+    if not st.session_state.pop("clear_uploader", False):
+        return False
+    st.session_state.pop("uploader", None)
+    st.session_state["last_upload"] = ()
+    return True
+
+
 def main() -> None:
     ensure_dir(UPLOAD_DIR)
     ensure_dir(WORK_DIR)
@@ -55,6 +71,10 @@ def main() -> None:
     # delete-triggered st.rerun() causes, which would otherwise re-write the
     # same files onto a freshly-wiped directory. We only write on a genuine
     # change to the selection, so a re-sent identical upload is ignored.
+    # If the Files screen just cleared everything, drop the sidebar upload
+    # box's selection on this rerun (issue #7). This must run before the
+    # widget below is created.
+    _apply_pending_clear()
     last_selected = st.session_state.setdefault("last_upload", ())
     uploaded = st.sidebar.file_uploader(
         "Upload files", accept_multiple_files=True, key="uploader"

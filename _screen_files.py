@@ -51,6 +51,10 @@ def _delete_all() -> list[str]:
                     pass
     except OSError:
         pass
+    # Signal the app shell (see ``app._apply_pending_clear``) to clear the
+    # sidebar upload box on the next rerun, so a stale selection does not
+    # linger after the files are gone (issue #7).
+    st.session_state["clear_uploader"] = True
     return removed
 
 
