@@ -1,0 +1,25 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test-only dependency
+        # The suite stubs streamlit (conftest.py) and only needs PyPDF2,
+        # so we skip the heavy requirements.txt (torch/whisper) entirely.
+        run: python -m pip install --quiet PyPDF2
+      - name: Run test suite
+        run: |
+          python -m tests.test_shared
+          python -m tests.test_pdf_merge
+          python -m tests.test_files

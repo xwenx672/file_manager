@@ -27,8 +27,11 @@ def ensure_dir(path: str) -> str:
     return path
 
 
-def safe_name(name: str) -> str:
-    """Return a filesystem-safe basename for a filename."""
+def safe_name(name: "str | None") -> str:
+    """Return a filesystem-safe basename for a filename.
+
+    ``None`` and blank input fall back to ``"unnamed"``.
+    """
     base = os.path.basename(os.path.join("x", name or "unnamed"))
     return base if base.strip() else "unnamed"
 
